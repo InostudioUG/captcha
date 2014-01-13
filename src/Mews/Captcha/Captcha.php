@@ -62,10 +62,19 @@ class Captcha {
      */
     public static function create($id = null)
     {
-
         static::$char = Str::random(static::$config['length'], static::$config['type']);
 
-        Session::put('captchaHash', Hash::make(static::$config['sensitive'] === true ? static::$char : Str::lower(static::$char)));
+        // PATCH INOSTUDIO
+        if (!isset(static::$config['sensitive']) || static::$config['sensitive'] === false) {
+            static::$char = Str::lower(static::$char);
+        }
+        // self defined 'char pool' overwrites static::char (makes options 'type' and 'sensitive' obsolete)
+        if (!empty(static::$config['pool'])) {
+            static::$char = substr(str_shuffle(str_repeat(static::$config['pool'], 5)), 0, static::$config['length']);
+        }
+        Session::put('captchaHash', Hash::make(static::$char));
+        // PATCH ENDE
+
 
     	static::$id = $id ? $id : static::$config['id'];
 
@@ -175,7 +184,7 @@ class Captcha {
 
     /**
      * Checks if the supplied captcha test value matches the stored one
-     * 
+     *
      * @param	string	$value
      * @access	public
      * @return	bool
